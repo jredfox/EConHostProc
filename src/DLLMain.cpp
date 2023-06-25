@@ -146,7 +146,7 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT u
 			//get WINSIG from the path or the APPDATA
 			string winsig = WinGetEnv("WINSIG");
 			if (winsig.empty())
-				winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\libs\\WINSIG.exe";
+				winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\natives\\WINSIG.exe";
 
 			string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
 			system(cmd.c_str());
