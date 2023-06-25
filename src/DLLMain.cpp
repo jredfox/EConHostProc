@@ -7,16 +7,17 @@ using namespace std;
 
 #pragma comment( lib, "comctl32.lib")
 #pragma data_seg("SHARED")
-HWND hWndNotepad = nullptr;
+HWND target = nullptr;
 HHOOK hGetMsgHook;
 bool hasInit = false;
+DWORD consolePID = 0;
 #pragma data_seg()
 #pragma comment(linker, "/section:SHARED,RWS")
 
 HINSTANCE hInst;
 
-__declspec(dllexport) LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam);
-__declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+extern "C" __declspec(dllexport) LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam);
+extern "C" __declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,
@@ -57,9 +58,31 @@ extern "C" __declspec(dllexport) void activateWindow(HWND hwnd)
 	RedrawWindow(hwnd, NULL, 0, RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
 }
 
+extern "C" __declspec(dllexport) DWORD getPID(HWND h)
+{
+	DWORD pid = 0;
+	GetWindowThreadProcessId(h, &pid);
+	return pid;
+}
+
+extern "C" __declspec(dllexport) const char * WinGetEnv(const char * name)
+{
+	const DWORD buffSize = 65535;
+	static char buffer[buffSize];
+	if (GetEnvironmentVariableA(name, buffer, buffSize))
+	{
+		return buffer;
+	}
+	else
+	{
+		return "";
+	}
+}
+
 extern "C" __declspec(dllexport) BOOL CALLBACK SetHook(HWND hwnd)
 {
-	hWndNotepad = hwnd;
+	target = hwnd;
+	consolePID = getPID(GetConsoleWindow());
 	hGetMsgHook = SetWindowsHookExA(WH_CBT, (HOOKPROC)GetMsgProc, hInst, 0);
 	if (!hGetMsgHook)
 	{
@@ -77,22 +100,22 @@ extern "C" __declspec(dllexport) BOOL CALLBACK SetHook(HWND hwnd)
 /**
 * the windows hook hanlder to inject the new windows proc into the application
 **/
-LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam)
+extern "C" __declspec(dllexport) LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
 	MSG* lpMsg;
 	if (nCode >= 0)
 	{
 		lpMsg = (MSG*)lParam;
 		HWND whand = (HWND)wParam;
-		if (whand == hWndNotepad)
+		if (whand == target)
 		{
-			bool bSubclassed = SetWindowSubclass((HWND)hWndNotepad, SubclassProc, 0, 0);
-			SetFocus(hWndNotepad);
+			bool bSubclassed = SetWindowSubclass((HWND)target, SubclassProc, 0, 0);
+			SetFocus(target);
 			UnhookWindowsHookEx(hGetMsgHook);//removes our hook so it doesn't lag the OS
 			if (!bSubclassed)
 			{
 				char out[64] = { 0 };
-				sprintf_s(out, 63, "Error Replacing Window Proc: %i", (UINT)hWndNotepad);
+				sprintf_s(out, 63, "Error Replacing Window Proc: %i", (UINT)target);
 				OutputDebugStringA(out);
 			}
 		}
@@ -100,35 +123,38 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam)
 	return CallNextHookEx(hGetMsgHook, nCode, wParam, lParam);
 }
 
-void init()
+extern "C" __declspec(dllexport) void init()
 {
 	if (!hasInit)
 	{
 		hasInit = true;
-		Beep(800, 500);
+		//Beep(800, 500);
 		char filename[MAX_PATH]; //this is a char buffer
 		GetModuleFileNameA(hInst, filename, sizeof(filename));
 		string s = string(filename);
-		SetWindowTextA(hWndNotepad, s.c_str());
 		LoadLibraryA(s.c_str()); //Makes it so the DLL doesn't unload from the process
 	}
 }
 
-LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+extern "C" __declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 {
 	init();
 	switch (uMsg)
 	{
-	case WM_CLOSE:
-	{
-		return 1;
-	}
-	case WM_CTLCOLOREDIT:
-	{
-		SetDCBrushColor((HDC)wParam, RGB(255, 0, 0));
-		return (INT_PTR)GetStockObject(DC_BRUSH);
-	}
-	break;
+		case WM_CLOSE:
+		{
+			//get WINSIG from the path or the APPDATA
+			string winsig = WinGetEnv("WINSIG");
+			if (winsig.empty())
+				winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\libs\\WINSIG.exe";
+
+			string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
+			system(cmd.c_str());
+			MessageBox(NULL, cmd.c_str(), NULL, NULL);
+			break;
+		}
+		default:
+			break;
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
