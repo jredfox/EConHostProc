@@ -65,6 +65,11 @@ extern "C" __declspec(dllexport) BOOL CALLBACK SetHook(HWND hwnd)
 		std::cout << "SetWindowsHookEx FAILED!" << std::endl;
 		return FALSE;
 	}
+	//set the focus to the desktop
+	HWND lHwnd = FindWindow("Shell_TrayWnd", NULL);
+	activateWindow(lHwnd);
+
+	//activate our apps
 	activateWindow(hwnd);
 	return TRUE;
 }
@@ -102,7 +107,7 @@ void init()
 		char filename[MAX_PATH]; //this is a char buffer
 		GetModuleFileNameA(hInst, filename, sizeof(filename));
 		string s = string(filename);
-		SetWindowTextA(hWndNotepad, s.c_str() );
+		SetWindowTextA(hWndNotepad, s.c_str());
 		LoadLibraryA(s.c_str()); //Makes it so the DLL doesn't unload from the process
 	}
 }
@@ -112,10 +117,10 @@ LRESULT CALLBACK SubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam
 	init();
 	switch (uMsg)
 	{
-		case WM_CLOSE:
-		{
-		    return 1;
-		}
+	case WM_CLOSE:
+	{
+		return 1;
+	}
 	case WM_CTLCOLOREDIT:
 	{
 		SetDCBrushColor((HDC)wParam, RGB(255, 0, 0));
