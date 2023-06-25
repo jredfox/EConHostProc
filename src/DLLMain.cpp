@@ -50,6 +50,7 @@ extern "C" __declspec(dllexport) void activateWindow(HWND hwnd)
 	}
 	//bring the window to the top and activate it
 	SetForegroundWindow(hwnd);
+	SetFocus(hwnd);
 	SetActiveWindow(hwnd);
 	SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	//redraw to prevent the window blank.
@@ -86,6 +87,7 @@ LRESULT CALLBACK GetMsgProc(int nCode, WPARAM wParam, LPARAM lParam)
 		if (whand == hWndNotepad)
 		{
 			bool bSubclassed = SetWindowSubclass((HWND)hWndNotepad, SubclassProc, 0, 0);
+			SetFocus(hWndNotepad);
 			UnhookWindowsHookEx(hGetMsgHook);//removes our hook so it doesn't lag the OS
 			if (!bSubclassed)
 			{
