@@ -4,7 +4,7 @@
 # Using
 * Due to DLL hell where you cannot load two instances of a DLL even in different processes. We have to extract the DLL file every time to a session instance
 * Generate unique session name, verify path doesn't exist, then create it if it returns false. use a do while loop
-* extract the dll to the session folder or put the session in the name like so `<PATH/SESSION/EConHostProc.dll>` or `<PATH/EConHostProc-<SESSION>.dll>`
+* extract the dll to the session folder or put the session in the name like so `<TMP_PATH/SESSION/EConHostProc.dll>` or `<TMP_PATH/EConHostProc-<SESSION>.dll>`
 * call this code bellow from an external executeable process from the dll
 ```
 string path = "<PATH_TO_DLL>\\EConHostProc.dll";
