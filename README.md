@@ -10,4 +10,4 @@ SetHook(GetConsoleWindow());
 ```
 
 # Compiling
-Use Microsoft Visual Studio 2017. 2021 has a bug where if it compiles a dll and namespace std is called it will stop compiling the DLL. I reported it and asked for work arounds but there are none for now.
+Use Microsoft Visual Studio 2017. 2022 has a bug where if it compiles a dll and namespace std is called it will stop compiling the DLL. I reported it and asked for work arounds but there are none for now.
