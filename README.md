@@ -2,6 +2,7 @@
  Enhanced ConHost.exe Window Proceedures.  
  
 # Using
+* Install WINSIG.exe to `%APPDATA%/OpenTerminal/natives/WINSIG.exe` or set WINSIG enviromental variable in the path
 * Due to DLL hell where you cannot load two instances of a DLL even in different processes. We have to extract the DLL file every time to a session instance
 * Generate unique session name, verify path doesn't exist, then create it if it returns false. use a do while loop
 * extract the dll to the session folder or put the session in the name like so `<TMP_PATH/SESSION/EConHostProc.dll>` or `<TMP_PATH/EConHostProc-<SESSION>.dll>`
