@@ -144,20 +144,20 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT u
 	init();
 	switch (uMsg)
 	{
-	case WM_CLOSE:
-	{
-		//get WINSIG from the path or the APPDATA. While we could just copy the code from WINSIG if conHost is wrapped by another console calling FreeConsole from the same process causes issues so use WINSIG
-		string winsig = WinGetEnv("WINSIG");
-		if (winsig.empty())
-			winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\natives\\WINSIG.exe";
+		case WM_CLOSE:
+		{
+			//get WINSIG from the path or the APPDATA. While we could just copy the code from WINSIG if conHost is wrapped by another console calling FreeConsole from the same process causes issues so use WINSIG
+			string winsig = WinGetEnv("WINSIG");
+			if (winsig.empty())
+				winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\natives\\WINSIG.exe";
 
-		string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
-		system(cmd.c_str());
-		MessageBox(NULL, cmd.c_str(), NULL, NULL);
-		break;
-	}
-	default:
-		break;
+			string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
+			system(cmd.c_str());
+			MessageBox(NULL, cmd.c_str(), NULL, NULL);
+			break;
+		}
+		default:
+			break;
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
