@@ -10,7 +10,7 @@ using namespace std;
 HWND target = nullptr;
 HHOOK hGetMsgHook;
 bool hasInit = false;
-DWORD consolePID = 0;
+DWORD consolePID = 0;//for some odd reason the target changes to conHost.exe's instead of remaining cmd.exe's handle after injection. So we have to cache the console PID here
 #pragma data_seg()
 #pragma comment(linker, "/section:SHARED,RWS")
 
@@ -79,10 +79,13 @@ extern "C" __declspec(dllexport) const char * WinGetEnv(const char * name)
 	}
 }
 
+/**
+The HWND parameter must be equal to GetConsoleWindow() from the target's process
+**/
 extern "C" __declspec(dllexport) BOOL CALLBACK SetHook(HWND hwnd)
 {
 	target = hwnd;
-	consolePID = getPID(GetConsoleWindow());
+	consolePID = getPID(hwnd);
 	hGetMsgHook = SetWindowsHookExA(WH_CBT, (HOOKPROC)GetMsgProc, hInst, 0);
 	if (!hGetMsgHook)
 	{
@@ -141,20 +144,20 @@ extern "C" __declspec(dllexport) LRESULT CALLBACK SubclassProc(HWND hWnd, UINT u
 	init();
 	switch (uMsg)
 	{
-		case WM_CLOSE:
-		{
-			//get WINSIG from the path or the APPDATA
-			string winsig = WinGetEnv("WINSIG");
-			if (winsig.empty())
-				winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\natives\\WINSIG.exe";
+	case WM_CLOSE:
+	{
+		//get WINSIG from the path or the APPDATA. While we could just copy the code from WINSIG if conHost is wrapped by another console calling FreeConsole from the same process causes issues so use WINSIG
+		string winsig = WinGetEnv("WINSIG");
+		if (winsig.empty())
+			winsig = string(WinGetEnv("APPDATA")) + "\\OpenTerminal\\natives\\WINSIG.exe";
 
-			string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
-			system(cmd.c_str());
-			MessageBox(NULL, cmd.c_str(), NULL, NULL);
-			break;
-		}
-		default:
-			break;
+		string cmd = winsig + " " + to_string(consolePID) + " " + to_string(CTRL_C_EVENT);
+		system(cmd.c_str());
+		MessageBox(NULL, cmd.c_str(), NULL, NULL);
+		break;
+	}
+	default:
+		break;
 	}
 	return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
